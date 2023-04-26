@@ -2,13 +2,9 @@
 # Project Part B: Game Playing Agent
 
 from referee.game import \
-    PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
+    PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir, Board
+from agent import minimax
 
-# This is the entry point for your game playing agent. Currently the agent
-# simply spawns a token at the centre of the board if playing as RED, and
-# spreads a token at the centre of the board if playing as BLUE. This is
-# intended to serve as an example of how to use the referee API -- obviously
-# this is not a valid strategy for actually playing the game!
 
 class Agent:
     def __init__(self, color: PlayerColor, **referee: dict):
@@ -16,6 +12,8 @@ class Agent:
         Initialise the agent.
         """
         self._color = color
+        # Initialise game
+        self.game = Board()
         match color:
             case PlayerColor.RED:
                 print("Testing: I am playing as red")
@@ -37,6 +35,10 @@ class Agent:
         """
         Update the agent with the last player's action.
         """
+        # Increase total number of turns
+        global turns
+        turns += 1
+
         match action:
             case SpawnAction(cell):
                 print(f"Testing: {color} SPAWN at {cell}")
@@ -44,3 +46,12 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
+
+    def minimaxValue(self, state, game):
+
+        # Check Terminal nodes
+        if Board.game_over:
+            # Return Utility value
+            # TODO: Implement Utility function
+            return
+
