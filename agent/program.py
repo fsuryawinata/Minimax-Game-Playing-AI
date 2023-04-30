@@ -25,6 +25,7 @@ class Agent:
         Return the next action to take.
         """
         # Spawn in middle if first turn
+        print(self.game._state.values())
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
         depth = 2
