@@ -24,21 +24,25 @@ class Agent:
         """
         Return the next action to take.
         """
-        match self._color:
-            case PlayerColor.RED:
-                return SpawnAction(HexPos(3, 3))
-            case PlayerColor.BLUE:
-                # This is going to be invalid... BLUE never spawned!
-                return SpreadAction(HexPos(3, 3), HexDir.Up)
+        # Spawn in middle if first turn
+        if self.game.turn_count == 0:
+            return SpawnAction(HexPos(3, 3))
+        depth = 2
+        move = minimax.minimaxDecision(depth, self.game, self._color)
+        print("SHIT 2")
+        return move
+        # match self._color:
+        #     case PlayerColor.RED:
+        #         return SpawnAction(HexPos(3, 3))
+        #     case PlayerColor.BLUE:
+        #         # This is going to be invalid... BLUE never spawned!
+        #         return SpreadAction(HexPos(3, 3), HexDir.Up)
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """
         Update the agent with the last player's action.
         """
-        # Increase total number of turns
-        global turns
-        turns += 1
-
+        self.game.apply_action(action)
         match action:
             case SpawnAction(cell):
                 print(f"Testing: {color} SPAWN at {cell}")
@@ -46,12 +50,3 @@ class Agent:
             case SpreadAction(cell, direction):
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-
-    def minimaxValue(self, state, game):
-
-        # Check Terminal nodes
-        if Board.game_over:
-            # Return Utility value
-            # TODO: Implement Utility function
-            return
-
