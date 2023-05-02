@@ -39,7 +39,7 @@ def getOperators(game) -> List[Action]:
         neighbour_opponent = getFarNeighbours(pos, power)
 
     for pos in neighbour_opponent:
-        if not game._cell_occupied(pos):
+        if not cellOccupied(pos, game):
             empty_cells.append(pos)
     spawn_actions = [SpawnAction(pos) for pos in empty_cells]
 
@@ -59,8 +59,8 @@ def cellOccupied(cell, game):
     Check whether the cell is occupied
     """
     if game._state[cell].player == None:
-        return True
-    return False
+        return False
+    return True
 
 
 def minimaxValue(state, game, depth, player_colour):
