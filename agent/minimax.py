@@ -7,6 +7,7 @@ DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.Down
 UNDOMIN = 0
 UNDOMAX = 0
 
+
 def minimaxDecision(depth, game, colour):
     """
     Find best move
@@ -45,7 +46,6 @@ def getOperators(game) -> List[Action]:
     # List possible SPREAD actions
     player_cells = getPlayerCells(game)
     spread_actions = []
-
 
     for pos in player_cells:
         for direction in DIRECTIONS:
@@ -111,6 +111,7 @@ def minValue(state, game, depth, alpha, beta):
 
     return best_score
 
+
 def getPlayerCells(game):
     player_cells = {}
     for pos, state in game._state.items():
@@ -118,12 +119,14 @@ def getPlayerCells(game):
             player_cells[pos] = state.power
     return player_cells
 
+
 def getOpponentCells(game):
     opponent_cells = {}
     for pos, state in game._state.items():
         if state.player != game._turn_color and state.player != None:
             opponent_cells[pos] = state.power
     return opponent_cells
+
 
 def checkCapture(pos, direction, pow, opponent_pieces):
     """
@@ -140,12 +143,12 @@ def checkCapture(pos, direction, pow, opponent_pieces):
         if 0 > newr or newr > 6:
             newr = newr % BOARD_SIZE
 
-
         pos = HexPos(newq, newr)
         if pos in opponent_pieces:
             return 1
         i += 1
     return 0
+
 
 def utility(state):
     """
@@ -168,11 +171,13 @@ def utility(state):
 
     return -1
 
+
 def isWithin2Moves(pos, opponent_pieces):
     for opponent_pos in opponent_pieces:
         if getDistance(pos, opponent_pos) <= 2:
             return True
     return False
+
 
 def getDistance(pos1, pos2):
     """
@@ -181,6 +186,7 @@ def getDistance(pos1, pos2):
     q1, r1 = pos1.q, pos1.r
     q2, r2 = pos2.q, pos2.r
     return (abs(q1 - q2) + abs(q1 + r1 - q2 - r2) + abs(r1 - r2)) // 2
+
 
 def getNeighbours(cell, power):
     """
@@ -200,6 +206,7 @@ def getNeighbours(cell, power):
         neighbours.append(HexPos(newr, newq))
 
     return neighbours
+
 
 def utilitypower(state):
     # Calculate the utility value of the given state for the given player
