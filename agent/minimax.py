@@ -51,7 +51,16 @@ def getOperators(game) -> List[Action]:
         for direction in DIRECTIONS:
             spread_actions.append(SpreadAction(pos, direction))
 
+
     return spawn_actions + spread_actions
+
+def cellOccupied(cell, game):
+    """
+    Check whether the cell is occupied
+    """
+    if game._state[cell].player == None:
+        return True
+    return False
 
 
 def minimaxValue(state, game, depth, player_colour):
