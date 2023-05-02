@@ -36,7 +36,7 @@ def getOperators(game) -> List[Action]:
     # List possible SPAWN actions within 2 moves of opponent cells
     empty_cells = []
     for pos, power in opponent_cells.items():
-        neighbour_opponent = getNeighbours(pos, power)
+        neighbour_opponent = getFarNeighbours(pos, power)
 
     for pos in neighbour_opponent:
         if not game._cell_occupied(pos):
@@ -149,50 +149,125 @@ def checkCapture(pos, direction, pow, opponent_pieces):
         i += 1
     return 0
 
-
 def utility(state):
     """
     Calculate the utility value of the given state for the given player and
     return a numeric value representing the utility
     """
+    # Check if game is over
+    if state.game_over:
+        if state.winner_color == state._turn_color:
+            return float('inf')
+        elif state.winner_color != state._turn_color:
+            return float('-inf')
+        else:
+            return 0
+
     player_pieces = getPlayerCells(state)
     opponent_pieces = getOpponentCells(state)
 
-    for pos in player_pieces:
-        if isWithin2Moves(pos, opponent_pieces):
-            return 1
+    # Check if power stays the same
+    player_power = sum(player_pieces.values())
+    opponent_power = sum(opponent_pieces.values())
+    distance = getDistance(player_pieces, opponent_pieces)
 
-    # # Possible SPREAD action can capture opponent's token
-    # for pos in player_pieces:
-    #     for direction in DIRECTIONS:
-    #         pow = state._state[pos].power
-    #         if checkCapture(pos, direction, pow, opponent_pieces):
-    #             return 1
+    # if the player's power is lower than the opponent's power, prioritize increasing power
+    if player_power < opponent_power:
+        return 1 / player_power
 
-    return -1
+    # if the player's power is higher than the opponent's power, prioritize reducing distance
+    elif player_power > opponent_power:
+        if distance <= 2:
+            return 100 - distance
+        else:
+            return 1 / distance
 
+    else:
+        # Check if piece is close to opponent piece
+        for pos in player_pieces.keys():
+            neighbours = getNeighbours(pos)
+            for neighbour in neighbours:
+                if neighbour in opponent_pieces:
+                    return -1
 
-def isWithin2Moves(pos, opponent_pieces):
-    for opponent_pos in opponent_pieces:
-        if getDistance(pos, opponent_pos) <= 2:
-            return True
-    return False
+    return 1
 
-
-def getDistance(pos1, pos2):
+def utilityChatGPT(state):
     """
-    Get the distance between two hexagonal positions
+    Calculate the utility value of the given state for the given player and
+    return a numeric value representing the utility
     """
-    q1, r1 = pos1.q, pos1.r
-    q2, r2 = pos2.q, pos2.r
-    return (abs(q1 - q2) + abs(q1 + r1 - q2 - r2) + abs(r1 - r2)) // 2
+    # Check if game is over
+    if state.game_over:
+        if state.winner_color == state._turn_color:
+            return float('inf')
+        elif state.winner_color != state._turn_color:
+            return float('-inf')
+        else:
+            return 0
+
+    player_pieces = getPlayerCells(state)
+    opponent_pieces = getOpponentCells(state)
+
+    player_power = sum(player_pieces.values())
+    opponent_power = sum(opponent_pieces.values())
+
+    distance = getDistance(player_pieces, opponent_pieces)
+
+    # if the player's power is lower than the opponent's power, prioritize increasing power
+    if player_power < opponent_power:
+        return 1 / player_power
+
+    # if the player's power is higher than the opponent's power, prioritize reducing distance
+    elif player_power > opponent_power:
+        if distance <= 2:
+            return 100 - distance
+        else:
+            return 1 / distance
+
+    # if the player's power is equal to the opponent's power, break the tie by reducing distance
+    else:
+        if distance <= 2:
+            return 100 - distance
+        else:
+            return 1 / distance
 
 
-def getNeighbours(cell, power):
+def getDistance(player_pieces, opponent_pieces):
+    """
+    Get manhattan distance to closest opponent piece
+    """
+    min_distance = float('inf')
+    for player_pos in player_pieces:
+        for opp_pos in opponent_pieces:
+            distance = abs(player_pos.r - opp_pos.r) + abs(player_pos.q - opp_pos.q)
+            if distance < min_distance:
+                min_distance = distance
+    return min_distance
+
+def getNeighbours(cell):
     """
     Get surrounding cells
     """
-    power = power + 1
+    neighbours = []
+    for dir in DIRECTIONS:
+        newq = cell.q + dir.q
+        newr = cell.r + dir.r
+
+        if 0 > newq or newq > 6:
+            newq = newq % BOARD_SIZE
+        if 0 > newr or newr > 6:
+            newr = newr % BOARD_SIZE
+
+        neighbours.append(HexPos(newr, newq))
+
+    return neighbours
+
+def getFarNeighbours(cell, power):
+    """
+    Get cells out of opponent's reach
+    """
+    power = power + 2
     neighbours = []
     for dir in DIRECTIONS:
         newq = cell.q + power * dir.q
