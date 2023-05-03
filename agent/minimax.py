@@ -1,11 +1,18 @@
 from referee.game import \
-    PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir, Board
+    PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
 from typing import List
 
 BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
-UNDOMIN = 0
-UNDOMAX = 0
+
+prev_red_token = 0
+prev_blue_token = 0
+
+EAT_WEIGHT = 5
+POWER_WEIGHT = 4
+SPREAD_WEIGHT = 3
+SPAWN_CLOSE_WEIGHT = 2
+SPAWN_FAR_WEIGHT = 1
 
 
 def minimaxDecision(depth, game, colour):
@@ -15,10 +22,14 @@ def minimaxDecision(depth, game, colour):
     operators = getOperators(game)
     best_operator = None
     best_value = float('-inf')
+
     for op in operators:
+        setRedTokens(game)
+        setBlueTokens(game)
         game.apply_action(op)
         state = game
         value = minimaxValue(state, game, depth, colour)
+        #print(f"VALUE {value}")
         game.undo_action()
         if value > best_value:
             best_value = value
@@ -27,54 +38,20 @@ def minimaxDecision(depth, game, colour):
     return best_operator
 
 
-def getOperators(game) -> List[Action]:
-    """
-    Find all valid moves
-    """
-    opponent_cells = getOpponentCells(game)
-
-    # List possible SPAWN actions within 2 moves of opponent cells
-    empty_cells = []
-    for pos, power in opponent_cells.items():
-        neighbour_opponent = getFarNeighbours(pos, power)
-
-    for pos in neighbour_opponent:
-        if not cellOccupied(pos, game):
-            empty_cells.append(pos)
-    spawn_actions = [SpawnAction(pos) for pos in empty_cells]
-
-    # List possible SPREAD actions
-    player_cells = getPlayerCells(game)
-    spread_actions = []
-
-    for pos in player_cells:
-        for direction in DIRECTIONS:
-            spread_actions.append(SpreadAction(pos, direction))
-
-
-    return spawn_actions + spread_actions
-
-def cellOccupied(cell, game):
-    """
-    Check whether the cell is occupied
-    """
-    if game._state[cell].player == None:
-        return False
-    return True
-
-
 def minimaxValue(state, game, depth, player_colour):
     """
     Calculate minimax value
     """
     # Check Terminal nodes
-    if state.game_over | depth == 0:
+    if state.game_over or depth == 0:
         return utility(state)
-
-    elif player_colour == game.turn_color:
-        return maxValue(state, game, depth, float('-inf'), float('inf'))
     else:
-        return minValue(state, game, depth, float('-inf'), float('inf'))
+        if player_colour == game.turn_color:
+            # print(f"MAX {maxValue(state, game, depth, float('-inf'), float('inf'))}")
+            return maxValue(state, game, depth - 1, float('-inf'), float('inf'))
+        else:
+            print(f"MIN {minValue(state, game, depth, float('-inf'), float('inf'))}")
+            return minValue(state, game, depth - 1, float('-inf'), float('inf'))
 
 
 def maxValue(state, game, depth, alpha, beta):
@@ -85,7 +62,10 @@ def maxValue(state, game, depth, alpha, beta):
     operators = getOperators(game)
 
     for op in operators:
+        setRedTokens(game)
+        setBlueTokens(game)
         game.apply_action(op)
+
         new_state = game
         score = minValue(new_state, game, depth - 1, alpha, beta)
         game.undo_action()
@@ -104,9 +84,11 @@ def minValue(state, game, depth, alpha, beta):
         return utility(state)
 
     best_score = float('inf')
-    operators = getOperators(game)
+    operators = getOperators(state)
 
     for op in operators:
+        setRedTokens(game)
+        setBlueTokens(game)
         game.apply_action(op)
         new_state = game
         score = maxValue(new_state, game, depth - 1, alpha, beta)
@@ -124,15 +106,15 @@ def minValue(state, game, depth, alpha, beta):
 def getPlayerCells(game):
     player_cells = {}
     for pos, state in game._state.items():
-        if state.player == game._turn_color:
+        if state.player == game.turn_color:
             player_cells[pos] = state.power
     return player_cells
 
 
 def getOpponentCells(game):
     opponent_cells = {}
-    for pos, state in game._state.items():
-        if state.player != game._turn_color and state.player != None:
+    for pos, state in game.state.items():
+        if state.player != game.turn_color and state.player is not None:
             opponent_cells[pos] = state.power
     return opponent_cells
 
@@ -158,88 +140,68 @@ def checkCapture(pos, direction, pow, opponent_pieces):
         i += 1
     return 0
 
+
 def utility(state):
     """
     Calculate the utility value of the given state for the given player and
     return a numeric value representing the utility
     """
-    # Check if game is over
-    if state.game_over:
-        if state.winner_color == state._turn_color:
-            return float('inf')
-        elif state.winner_color != state._turn_color:
-            return float('-inf')
-        else:
-            return 0
+    tokens_eaten = 0
+    total_power = 0
 
-    player_pieces = getPlayerCells(state)
-    opponent_pieces = getOpponentCells(state)
+    # Check how many pieces an opponent node is eaten
+    # by comparing the previous power
+    match state.turn_color:
+        case PlayerColor.RED:
+            opponent_tokens = getBlueTokens(state)
+            # Token eaten
+            if opponent_tokens < prev_blue_token:
+                tokens_eaten = prev_blue_token - opponent_tokens
 
-    # Check if power stays the same
-    player_power = sum(player_pieces.values())
-    opponent_power = sum(opponent_pieces.values())
-    distance = getDistance(player_pieces, opponent_pieces)
+        case PlayerColor.BLUE:
+            opponent_tokens = getRedTokens(state)
+            # Token eaten
+            if opponent_tokens < prev_red_token:
+                tokens_eaten = prev_red_token - opponent_tokens
 
-    # if the player's power is lower than the opponent's power, prioritize increasing power
-    if player_power < opponent_power:
-        return 1 / player_power
+    # Get total power of the player color tokens on the board
+    getTotalPower(state)
 
-    # if the player's power is higher than the opponent's power, prioritize reducing distance
-    elif player_power > opponent_power:
-        if distance <= 2:
-            return 100 - distance
-        else:
-            return 1 / distance
 
-    else:
-        # Check if piece is close to opponent piece
-        for pos in player_pieces.keys():
-            neighbours = getNeighbours(pos)
-            for neighbour in neighbours:
-                if neighbour in opponent_pieces:
-                    return -1
+    utility_val = EAT_WEIGHT * tokens_eaten + POWER_WEIGHT * total_power
+    return utility_val
 
-    return 1
-
-def utilityChatGPT(state):
+def getOperators(game) -> List[Action]:
     """
-    Calculate the utility value of the given state for the given player and
-    return a numeric value representing the utility
+    Find all valid moves
     """
-    # Check if game is over
-    if state.game_over:
-        if state.winner_color == state._turn_color:
-            return float('inf')
-        elif state.winner_color != state._turn_color:
-            return float('-inf')
-        else:
-            return 0
 
-    player_pieces = getPlayerCells(state)
-    opponent_pieces = getOpponentCells(state)
+    # List possible SPAWN actions within 2 moves of opponent cells
+    empty_cells = []
+    for r in range(BOARD_SIZE):
+        for q in range(BOARD_SIZE):
+            if not cellOccupied(HexPos(r, q), game):
+                empty_cells.append(HexPos(r, q))
+    spawn_actions = [SpawnAction(pos) for pos in empty_cells]
 
-    player_power = sum(player_pieces.values())
-    opponent_power = sum(opponent_pieces.values())
+    # List possible SPREAD actions
+    player_cells = getPlayerCells(game)
+    spread_actions = []
 
-    distance = getDistance(player_pieces, opponent_pieces)
+    for pos in player_cells:
+        for direction in DIRECTIONS:
+            spread_actions.append(SpreadAction(pos, direction))
 
-    # if the player's power is lower than the opponent's power, prioritize increasing power
-    if player_power < opponent_power:
-        return 1 / player_power
+    return spawn_actions + spread_actions
 
-    # if the player's power is higher than the opponent's power, prioritize reducing distance
-    elif player_power > opponent_power:
-        if distance <= 2:
-            return 100 - distance
-        else:
-            return 1 / distance
 
-    # if the player's power is equal to the opponent's power, break the tie by reducing distance
-    else:
-        if distance <= 2:
-            return 100 - distance
-        else:
-            return 1 / distance
+def cellOccupied(cell, game):
+    """
+    Check whether the cell is occupied
+    """
+    if game._state[cell].player == None:
+        return False
+    return True
 
 
 def getDistance(player_pieces, opponent_pieces):
@@ -253,6 +215,7 @@ def getDistance(player_pieces, opponent_pieces):
             if distance < min_distance:
                 min_distance = distance
     return min_distance
+
 
 def getNeighbours(cell):
     """
@@ -271,6 +234,7 @@ def getNeighbours(cell):
         neighbours.append(HexPos(newr, newq))
 
     return neighbours
+
 
 def getFarNeighbours(cell, power):
     """
@@ -292,14 +256,56 @@ def getFarNeighbours(cell, power):
     return neighbours
 
 
-def utilitypower(state):
-    # Calculate the utility value of the given state for the given player
-    # Return a numeric value representing the utility
-    red_pow = 0
-    blue_pow = 1
-    for pos, state in state._state.items():
-        if state.player == PlayerColor.RED:
-            red_pow += 1
-        elif state.player == PlayerColor.BLUE:
-            blue_pow += 1
-    return red_pow - blue_pow
+def setRedTokens(game):
+    """
+    Set total number of red tokens on the board before action made
+    """
+    global prev_red_token
+    prev_red_token = 0
+    for cell, state in game._state.items():
+        if state.player == PlayerColor.BLUE:
+            prev_red_token += 1
+
+
+def getRedTokens(game):
+    """
+    Get total number of red tokens on the board
+    """
+    total_red_token = 0
+    for cell, state in game._state.items():
+        if state.player == PlayerColor.BLUE:
+            total_red_token += 1
+    return total_red_token
+
+
+def setBlueTokens(game):
+    """
+    Set total number of blue tokens on the board before action made
+    """
+    global prev_blue_token
+    prev_blue_token = 0
+    for cell, state in game._state.items():
+        if state.player == PlayerColor.BLUE:
+            prev_blue_token += 1
+
+
+def getBlueTokens(game):
+    """
+    Get total number of blue tokens on the board
+    """
+    total_blue_token = 0
+    for cell, state in game._state.items():
+        if state.player == PlayerColor.BLUE:
+            total_blue_token += 1
+    return total_blue_token
+
+
+def getTotalPower(game):
+    """
+    Get total power of the player colour turn tokens on the board
+    """
+    total_power = 0
+    for cell, state in game._state.items():
+        if state.player == game.turn_color:
+            total_power += state.power
+    return total_power

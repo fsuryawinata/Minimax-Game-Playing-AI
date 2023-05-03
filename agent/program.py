@@ -3,7 +3,8 @@
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir, Board
-from agent import minimax
+#from .board import Board
+from .minimax import minimaxDecision
 
 
 class Agent:
@@ -28,7 +29,7 @@ class Agent:
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
         depth = 2
-        move = minimax.minimaxDecision(depth, self.game, self._color)
+        move = minimaxDecision(depth, self.game, self._color)
         return move
         # match self._color:
         #     case PlayerColor.RED:
