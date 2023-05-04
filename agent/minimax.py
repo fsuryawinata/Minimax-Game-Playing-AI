@@ -17,7 +17,7 @@ TOKEN_WEIGHT = 2
 DISTANCE_WEIGHT = 1
 
 
-def minimaxDecision(depth, game, colour):
+def minimaxDecision(depth, game):
     """
     Find best move
     """
@@ -32,8 +32,7 @@ def minimaxDecision(depth, game, colour):
         state = copy.deepcopy(game)
         state.apply_action(op)
 
-        value = minimaxValue1(state, game, depth - 1, float('-inf'), float('inf'), colour)
-        #print(f"VALUE {value}")
+        value = minimaxValue(state, game, depth, float('-inf'), float('inf'))
         state.undo_action()
         if value > best_value:
             best_value = value
@@ -42,48 +41,63 @@ def minimaxDecision(depth, game, colour):
 
     return best_operator
 
-def minimaxValue(state, game, depth, alpha, beta, player_colour):
+def minimaxValue(state, game, depth, alpha, beta):
     """
     Calculate minimax value
     """
+    #print(f"COLOR {game.turn_color}, GAME TURN {state.turn_color}")
     # Check Terminal nodes
     if state.game_over or depth == 0:
         return utility(state)
     else:
-        # Switch color since game's color turn is the opponent now
-        player_colour = switchColour(player_colour)
-        #print(f"COLOR {player_colour}, GAME TURN {game.turn_color}")
-
-        if player_colour == game.turn_color:
+        if game.turn_color == state.turn_color:
+            best_val = float('-inf')
+            #print("MAX PLAYER")
             for op in getOperators(state):
-                setRedTokens(game)
-                setBlueTokens(game)
+                setRedTokens(state)
+                setBlueTokens(state)
 
-                new_state = copy.deepcopy(game)
+                new_state = copy.deepcopy(state)
                 new_state.apply_action(op)
-                alpha = max(alpha, minimaxValue(new_state, game, depth - 1, alpha, beta, player_colour))
+                #print(f"COLOR {game.turn_color}, NEW GAME TURN {new_state.turn_color}")
+                value = minimaxValue(new_state, game, depth - 1, alpha, beta)
                 new_state.undo_action()
+
+                if value > best_val:
+                    best_val = value
+
+                if best_val > alpha:
+                    alpha = best_val
 
                 if alpha >= beta:
                     break
 
-            return alpha
+            return best_val
         else:
-            for op in getOperators(state):
-                setRedTokens(game)
-                setBlueTokens(game)
+            min_val = float('inf')
 
-                new_state = copy.deepcopy(game)
+            for op in getOperators(state):
+                setRedTokens(state)
+                setBlueTokens(state)
+
+                new_state = copy.deepcopy(state)
                 new_state.apply_action(op)
-                beta = min(beta, minimaxValue(new_state, game, depth - 1, alpha, beta, player_colour))
+                #print(f"COLOR {game.turn_color}, NEW GAME TURN {new_state.turn_color}")
+                value = minimaxValue(new_state, game, depth - 1, alpha, beta)
                 new_state.undo_action()
+
+                if value < min_val:
+                    min_val = value
+
+                if min_val < alpha:
+                    alpha = min_val
 
                 if beta <= alpha:
                     break
+            #print("Iteration over")
+            return min_val
 
-            return beta
-
-def minimaxValue1(state, game, depth, alpha, beta, player_colour):
+def minimaxValue1(state, game, depth, alpha, beta):
     """
     Calculate minimax value
     """
@@ -91,9 +105,7 @@ def minimaxValue1(state, game, depth, alpha, beta, player_colour):
     if state.game_over or depth == 0:
         return utility(state)
     else:
-        #print(f"COLOR {player_colour}, GAME TURN {game.turn_color}")
-
-        if player_colour == game.turn_color:
+        if game.turn_color == state.turn_color:
             return maxValue(state, game, depth - 1, float('-inf'), float('inf'))
         else:
             return minValue(state, game, depth - 1, float('-inf'), float('inf'))
@@ -109,8 +121,8 @@ def maxValue(state, game, depth, alpha, beta):
         return utility(state)
 
     for op in getOperators(state):
-        setRedTokens(game)
-        setBlueTokens(game)
+        setRedTokens(state)
+        setBlueTokens(state)
 
         new_state = copy.deepcopy(state)
         new_state.apply_action(op)
@@ -118,7 +130,7 @@ def maxValue(state, game, depth, alpha, beta):
         new_state.undo_action()
 
         if alpha >= beta:
-            return alpha
+            break
 
     return alpha
 
@@ -128,8 +140,8 @@ def minValue(state, game, depth, alpha, beta):
         return utility(state)
 
     for op in getOperators(state):
-        setRedTokens(game)
-        setBlueTokens(game)
+        setRedTokens(state)
+        setBlueTokens(state)
 
         new_state = copy.deepcopy(state)
         new_state.apply_action(op)
@@ -137,7 +149,7 @@ def minValue(state, game, depth, alpha, beta):
         new_state.undo_action()
 
         if beta <= alpha:
-            return beta
+            break
 
     return beta
 
@@ -159,7 +171,7 @@ def utility(state):
                 tokens_eaten = prev_blue_token - opponent_tokens
                 #print(f"RED TOKENS {opponent_tokens} TOKENS EATEN {tokens_eaten}, PREV BLUE TOKEN {prev_blue_token}")
 
-            # Player token eaten
+            # Player token eaten, negative number
             if player_cells < prev_red_token:
                 tokens_eaten = player_cells - prev_red_token
 
@@ -170,7 +182,7 @@ def utility(state):
                 tokens_eaten = prev_red_token - opponent_tokens
                 #print(f"BLUE TOKENS {opponent_tokens} EATEN {tokens_eaten}, PREV RED TOKEN {prev_red_token}")
 
-            # Player token eaten
+            # Player token eaten, give negative number
             if player_cells < prev_blue_token:
                 tokens_eaten = player_cells - prev_blue_token
 
@@ -183,8 +195,10 @@ def utility(state):
 
     # Get the closest distance to opponent piece
     distance = getClosestDistance(state)
-    utility_val = EAT_WEIGHT * tokens_eaten + POWER_WEIGHT * total_power\
-                  + DISTANCE_WEIGHT * distance + TOKEN_WEIGHT * player_tokens
+    distance = -distance
+
+    utility_val = EAT_WEIGHT * tokens_eaten + POWER_WEIGHT * total_power \
+            + DISTANCE_WEIGHT * distance + TOKEN_WEIGHT * player_tokens
     return utility_val
 
 def getClosestDistance(game):
@@ -239,13 +253,16 @@ def getOperators(game) -> List[Action]:
     """
     Find all valid moves
     """
+    opponent_cells = getOpponentCells(game)
 
     # List possible SPAWN actions within 2 moves of opponent cells
     empty_cells = []
-    for r in range(BOARD_SIZE):
-        for q in range(BOARD_SIZE):
-            if not cellOccupied(HexPos(r, q), game):
-                empty_cells.append(HexPos(r, q))
+    for pos, power in opponent_cells.items():
+        neighbour_opponent = getFarNeighbours(pos, power)
+
+    for pos in neighbour_opponent:
+        if not cellOccupied(pos, game):
+            empty_cells.append(pos)
     spawn_actions = [SpawnAction(pos) for pos in empty_cells]
 
     # List possible SPREAD actions
