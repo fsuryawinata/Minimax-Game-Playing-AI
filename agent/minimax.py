@@ -13,8 +13,8 @@ prev_blue_token = 0
 
 EAT_WEIGHT = 4
 POWER_WEIGHT = 3
-SPREAD_WEIGHT = 2
-SPAWN_WEIGHT = 1
+TOKEN_WEIGHT = 2
+DISTANCE_WEIGHT = 1
 
 
 def minimaxDecision(depth, game, colour):
@@ -32,7 +32,7 @@ def minimaxDecision(depth, game, colour):
         state = copy.deepcopy(game)
         state.apply_action(op)
 
-        value = minimaxValue1(state, game, depth, float('-inf'), float('inf'), colour)
+        value = minimaxValue1(state, game, depth - 1, float('-inf'), float('inf'), colour)
         #print(f"VALUE {value}")
         state.undo_action()
         if value > best_value:
@@ -174,16 +174,17 @@ def utility(state):
             if player_cells < prev_blue_token:
                 tokens_eaten = player_cells - prev_blue_token
 
+    # Get number of tokens on the board
+    player_tokens = len(getPlayerCells(state))
+
     # Get total power of the player color tokens on the board
     total_power = getTotalPower(state)
 
-    # Get the highest power of player
-    highest_power = getHighestPower(state)
 
     # Get the closest distance to opponent piece
     distance = getClosestDistance(state)
-    utility_val = EAT_WEIGHT * tokens_eaten + POWER_WEIGHT * total_power \
-                  + SPREAD_WEIGHT * highest_power + SPAWN_WEIGHT * distance
+    utility_val = EAT_WEIGHT * tokens_eaten + POWER_WEIGHT * total_power\
+                  + DISTANCE_WEIGHT * distance + TOKEN_WEIGHT * player_tokens
     return utility_val
 
 def getClosestDistance(game):
