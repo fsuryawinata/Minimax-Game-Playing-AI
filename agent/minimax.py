@@ -15,43 +15,51 @@ ALPHA = 0.1
 
 # Weights for tdLeaf heuristic
 weights = {
-    "player_power": 1,
-    "opponent_power": -1,
-    "min_distance": -0.5,
-    "opponent_tokens": -0.1,
-    "player_tokens": 0.1
+    "player_power": 10,
+    "opponent_power": -10,
+    "highest_power": 8,
+    "opponent_tokens": -5,
+    "player_tokens": 5,
+    "min_distance": -1,
 }
 
 def minimaxDecision(depth, game):
     """
     Find best move
     """
-    operators = getOperators(game)
+    global weights
+    print(f"FIRST {weights}")
     best_operator = None
     best_value = float('-inf')
 
-    for op in operators:
-        setRedPower(game)
-        setBluePower(game)
-
+    for op in getOperators(game):
         state = copy.deepcopy(game)
         state.apply_action(op)
 
         # Opponent turn, depth = 2
-        value = minimaxValue(state, game, depth, float('-inf'), float('inf'))
+        value, _ = minimaxValue(state, game, depth, float('-inf'), float('inf'))
         state.undo_action()
         if value > best_value:
             best_value = value
             best_operator = op
             #print(f"BEST OP {best_operator}, VAL {best_value}")
 
+    if game.turn_count > 2:
+        weights = tdleafUpdate(game)
+    #print(weights)
     return best_operator
 
+
 def tdleafUpdate(state):
-    v = utility(state)
+    global weights
+    depth = 2
+    result, _ = minimaxValue(state, state, depth, float('-inf'), float('inf'))
+    val = utility(state)
+    f_i = features(state)
+    new_weights = {}
     for factor in weights.keys():
-        f_i = features[factor]
-        weights[factor] = weights[factor] + ALPHA * (result - val) * f_i
+        new_weights[factor] = weights[factor] + ALPHA * (result - val) * f_i[factor]
+    weights = new_weights
     return weights
 
 def features(state):
@@ -67,11 +75,14 @@ def features(state):
     player_tokens = len(player_cells)
     opponent_tokens = len(opponent_cells)
 
+    highest_power = getHighestPower(state)
+
     min_dist = getDistance(player_cells, opponent_cells)
 
     return {
         "player_power": player_power,
         "opponent_power": opponent_power,
+        "highest_power": highest_power,
         "player_tokens": player_tokens,
         "opponent_tokens": opponent_tokens,
         "min_distance": min_dist
@@ -82,41 +93,35 @@ def minimaxValue(state, game, depth, alpha, beta):
     """
     Calculate minimax value
     """
+    global weights
     # Check Terminal nodes
     if state.game_over or depth == 0:
-        tdleafUpdate(state)
-        return utility(state)
+        return utility(state), weights
     else:
         if game.turn_color == state.turn_color:
             for op in getOperators(state):
-                setRedPower(state)
-                setBluePower(state)
-
                 new_state = copy.deepcopy(state)
                 new_state.apply_action(op)
                 #print(f"OP {op}")
-                alpha = max(alpha, minimaxValue(new_state, game, depth - 1, alpha, beta))
+                alpha = max(alpha, minimaxValue(new_state, game, depth - 1, alpha, beta)[0])
                 new_state.undo_action()
 
                 if alpha >= beta:
                     break
-            return alpha
+            return alpha, weights
         else:
             for op in getOperators(state):
-                setRedPower(state)
-                setBluePower(state)
-
                 new_state = copy.deepcopy(state)
                 new_state.apply_action(op)
                 #print(f"OP {op}")
                 # Player turn, depth = 1
                 #print(f"Pos is {getPlayerCells(new_state)} Opp pos is {getOpponentCells(new_state)} op is {op}")
-                beta = min(beta, minimaxValue(new_state, game, depth - 1, alpha, beta))
+                beta = min(beta, minimaxValue(new_state, game, depth - 1, alpha, beta)[0])
                 new_state.undo_action()
 
                 if beta <= alpha:
                     break
-            return beta
+            return beta, weights
 
 
 def utility(state):
@@ -124,32 +129,40 @@ def utility(state):
     Calculate the utility value of the given state for the given player and
     return a numeric value representing the utility
     """
-    # Switched player and opponent because the turn has been applied and turn_color has changed
+
     switchColour(state)
 
-    # Total power difference between opponent and player
-    # negative if player is eaten, positive if player eats opponent
-    opp_pow = getOpponentPower(state)
-    player_pow = getPlayerPower(state)
-    pow_diff = player_pow - opp_pow
+    player_power = getPlayerPower(state)
+    opponent_power = getOpponentPower(state)
 
-    # Get number of tokens on the board
-    player_tokens = len(getPlayerCells(state))
+    player_cells = getPlayerCells(state)
+    opponent_cells = getOpponentCells(state)
 
-    # Get the highest power of player
-    highest_pow = getHighestPower(state)
+    player_tokens = len(player_cells)
+    opponent_tokens = len(opponent_cells)
 
-    # Get the closest distance to opponent piece
-    distance = getClosestDistance(state)
-    # Set as negative to get the closest distance
-    distance = -distance
+    # Check if won
+    if opponent_tokens == 0:
+        return float('inf')
+    elif player_tokens == 0:
+        return float('-inf')
+    #print(f"PLAYER {player_tokens}, OPP {opponent_tokens}")
 
-    utility_val = EAT_WEIGHT * pow_diff + DISTANCE_WEIGHT * distance \
-                  + TOKEN_WEIGHT * player_tokens + POWER_WEIGHT * highest_pow
-    # print(f"pow diff {EAT_WEIGHT} * {pow_diff} + "
-    #       f"dist {DISTANCE_WEIGHT} * {distance} + token num {TOKEN_WEIGHT} * {player_tokens} "
-    #       f"+ highest pow {POWER_WEIGHT} + {highest_pow} = {utility_val}")
-    return utility_val
+    min_dist = getDistance(player_cells, opponent_cells)
+
+    highest_power = getHighestPower(state)
+    switchColour(state)
+
+    val = weights["player_power"] * player_power + \
+            weights["opponent_power"] * opponent_power + \
+            weights["highest_power"] * highest_power + \
+            weights["player_tokens"] * player_tokens + \
+            weights["opponent_tokens"] * opponent_tokens + \
+            weights["min_distance"] * min_dist
+
+    #print(f"WEIGHTS {weights} UTIL {val}")
+    return val
+
 
 def switchColour(game):
     match game.turn_color:
@@ -185,29 +198,6 @@ def getOpponentCells(game):
         if state.player != game.turn_color and state.player is not None:
             opponent_cells[pos] = state.power
     return opponent_cells
-
-
-def checkCapture(pos, direction, pow, opponent_pieces):
-    """
-    Check if SPREAD action captures any opponent pieces
-    """
-    i = 1
-    while i <= pow:
-
-        newq = pos.q + i * direction.q
-        newr = pos.r + i * direction.r
-
-        if 0 > newq or newq > 6:
-            newq = newq % BOARD_SIZE
-        if 0 > newr or newr > 6:
-            newr = newr % BOARD_SIZE
-
-        pos = HexPos(newq, newr)
-        if pos in opponent_pieces:
-            return 1
-        i += 1
-    return 0
-
 
 def getOperators(game) -> List[Action]:
     """
@@ -307,29 +297,6 @@ def getFarNeighbours(cell, power):
         neighbours.append(HexPos(newr, newq))
 
     return neighbours
-
-
-def setRedPower(game):
-    """
-    Set total number of red tokens on the board before action made
-    """
-    global prev_red_power
-    prev_red_power = 0
-    for cell, state in game._state.items():
-        if state.player == PlayerColor.RED:
-            prev_red_power += state.power
-
-
-def setBluePower(game):
-    """
-    Set total number of blue tokens on the board before action made
-    """
-    global prev_blue_power
-    prev_blue_power = 0
-    for cell, state in game._state.items():
-        if state.player == PlayerColor.BLUE:
-            prev_blue_power += state.power
-
 
 def getPlayerPower(game):
     """

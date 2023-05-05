@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Fixed minimax. Need to improve utility">
+    <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Added tdleaf">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/agent/minimax.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/minimax.py" afterDir="false" />
     </list>
@@ -177,7 +177,14 @@
       <option name="project" value="LOCAL" />
       <updated>1683185968287</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Added tdleaf">
+      <created>1683266912410</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1683266912410</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -194,6 +201,7 @@
     <MESSAGE value="Changed utility, colour is same" />
     <MESSAGE value="Improved utility and minimax" />
     <MESSAGE value="Fixed minimax. Need to improve utility" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed minimax. Need to improve utility" />
+    <MESSAGE value="Added tdleaf" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added tdleaf" />
   </component>
 </project>
