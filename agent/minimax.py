@@ -7,15 +7,20 @@ from typing import List
 
 BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
-
-prev_red_token = 0
-prev_blue_token = 0
-
-EAT_WEIGHT = 4
-POWER_WEIGHT = 3
-TOKEN_WEIGHT = 2
+EAT_WEIGHT = 10
+POWER_WEIGHT = 8
+TOKEN_WEIGHT = 5
 DISTANCE_WEIGHT = 1
+ALPHA = 0.1
 
+# Weights for tdLeaf heuristic
+weights = {
+    "player_power": 1,
+    "opponent_power": -1,
+    "min_distance": -0.5,
+    "opponent_tokens": -0.1,
+    "player_tokens": 0.1
+}
 
 def minimaxDecision(depth, game):
     """
@@ -26,180 +31,133 @@ def minimaxDecision(depth, game):
     best_value = float('-inf')
 
     for op in operators:
-        setRedTokens(game)
-        setBlueTokens(game)
+        setRedPower(game)
+        setBluePower(game)
 
         state = copy.deepcopy(game)
         state.apply_action(op)
 
+        # Opponent turn, depth = 2
         value = minimaxValue(state, game, depth, float('-inf'), float('inf'))
         state.undo_action()
         if value > best_value:
             best_value = value
             best_operator = op
-            #print(f"BEST VALUE {best_value} BEST OP {best_operator}")
+            #print(f"BEST OP {best_operator}, VAL {best_value}")
 
     return best_operator
+
+def tdleafUpdate(state):
+    v = utility(state)
+    for factor in weights.keys():
+        f_i = features[factor]
+        weights[factor] = weights[factor] + ALPHA * (result - val) * f_i
+    return weights
+
+def features(state):
+    """
+    Number for a list of features
+    """
+    player_power = getPlayerPower(state)
+    opponent_power = getOpponentPower(state)
+
+    player_cells = getPlayerCells(state)
+    opponent_cells = getOpponentCells(state)
+
+    player_tokens = len(player_cells)
+    opponent_tokens = len(opponent_cells)
+
+    min_dist = getDistance(player_cells, opponent_cells)
+
+    return {
+        "player_power": player_power,
+        "opponent_power": opponent_power,
+        "player_tokens": player_tokens,
+        "opponent_tokens": opponent_tokens,
+        "min_distance": min_dist
+    }
+
 
 def minimaxValue(state, game, depth, alpha, beta):
     """
     Calculate minimax value
     """
-    #print(f"COLOR {game.turn_color}, GAME TURN {state.turn_color}")
     # Check Terminal nodes
     if state.game_over or depth == 0:
+        tdleafUpdate(state)
         return utility(state)
     else:
         if game.turn_color == state.turn_color:
-            best_val = float('-inf')
-            #print("MAX PLAYER")
             for op in getOperators(state):
-                setRedTokens(state)
-                setBlueTokens(state)
+                setRedPower(state)
+                setBluePower(state)
 
                 new_state = copy.deepcopy(state)
                 new_state.apply_action(op)
-                #print(f"COLOR {game.turn_color}, NEW GAME TURN {new_state.turn_color}")
-                value = minimaxValue(new_state, game, depth - 1, alpha, beta)
+                #print(f"OP {op}")
+                alpha = max(alpha, minimaxValue(new_state, game, depth - 1, alpha, beta))
                 new_state.undo_action()
-
-                if value > best_val:
-                    best_val = value
-
-                if best_val > alpha:
-                    alpha = best_val
 
                 if alpha >= beta:
                     break
-
-            return best_val
+            return alpha
         else:
-            min_val = float('inf')
-
             for op in getOperators(state):
-                setRedTokens(state)
-                setBlueTokens(state)
+                setRedPower(state)
+                setBluePower(state)
 
                 new_state = copy.deepcopy(state)
                 new_state.apply_action(op)
-                #print(f"COLOR {game.turn_color}, NEW GAME TURN {new_state.turn_color}")
-                value = minimaxValue(new_state, game, depth - 1, alpha, beta)
+                #print(f"OP {op}")
+                # Player turn, depth = 1
+                #print(f"Pos is {getPlayerCells(new_state)} Opp pos is {getOpponentCells(new_state)} op is {op}")
+                beta = min(beta, minimaxValue(new_state, game, depth - 1, alpha, beta))
                 new_state.undo_action()
-
-                if value < min_val:
-                    min_val = value
-
-                if min_val < alpha:
-                    alpha = min_val
 
                 if beta <= alpha:
                     break
-            #print("Iteration over")
-            return min_val
+            return beta
 
-def minimaxValue1(state, game, depth, alpha, beta):
-    """
-    Calculate minimax value
-    """
-    # Check Terminal nodes
-    if state.game_over or depth == 0:
-        return utility(state)
-    else:
-        if game.turn_color == state.turn_color:
-            return maxValue(state, game, depth - 1, float('-inf'), float('inf'))
-        else:
-            return minValue(state, game, depth - 1, float('-inf'), float('inf'))
-def switchColour(colour):
-    match colour:
-        case PlayerColor.RED:
-            return PlayerColor.BLUE
-        case PlayerColor.BLUE:
-            return PlayerColor.RED
-
-def maxValue(state, game, depth, alpha, beta):
-    if state.game_over or depth == 0:
-        return utility(state)
-
-    for op in getOperators(state):
-        setRedTokens(state)
-        setBlueTokens(state)
-
-        new_state = copy.deepcopy(state)
-        new_state.apply_action(op)
-        alpha = max(alpha, minValue(new_state, game, depth - 1, alpha, beta))
-        new_state.undo_action()
-
-        if alpha >= beta:
-            break
-
-    return alpha
-
-
-def minValue(state, game, depth, alpha, beta):
-    if state.game_over or depth == 0:
-        return utility(state)
-
-    for op in getOperators(state):
-        setRedTokens(state)
-        setBlueTokens(state)
-
-        new_state = copy.deepcopy(state)
-        new_state.apply_action(op)
-        beta = min(beta, maxValue(new_state, game, depth - 1, alpha, beta))
-        new_state.undo_action()
-
-        if beta <= alpha:
-            break
-
-    return beta
 
 def utility(state):
     """
     Calculate the utility value of the given state for the given player and
     return a numeric value representing the utility
     """
-    tokens_eaten = 0
+    # Switched player and opponent because the turn has been applied and turn_color has changed
+    switchColour(state)
 
-    # Check how many pieces an opponent node is eaten
-    # by comparing the previous power
-    player_cells = len(getPlayerCells(state))
-    match state.turn_color:
-        case PlayerColor.RED:
-            opponent_tokens = getBlueTokens(state)
-            # Token eaten
-            if opponent_tokens < prev_blue_token:
-                tokens_eaten = prev_blue_token - opponent_tokens
-                #print(f"RED TOKENS {opponent_tokens} TOKENS EATEN {tokens_eaten}, PREV BLUE TOKEN {prev_blue_token}")
-
-            # Player token eaten, negative number
-            if player_cells < prev_red_token:
-                tokens_eaten = player_cells - prev_red_token
-
-        case PlayerColor.BLUE:
-            opponent_tokens = getRedTokens(state)
-            # Token eaten
-            if opponent_tokens < prev_red_token:
-                tokens_eaten = prev_red_token - opponent_tokens
-                #print(f"BLUE TOKENS {opponent_tokens} EATEN {tokens_eaten}, PREV RED TOKEN {prev_red_token}")
-
-            # Player token eaten, give negative number
-            if player_cells < prev_blue_token:
-                tokens_eaten = player_cells - prev_blue_token
+    # Total power difference between opponent and player
+    # negative if player is eaten, positive if player eats opponent
+    opp_pow = getOpponentPower(state)
+    player_pow = getPlayerPower(state)
+    pow_diff = player_pow - opp_pow
 
     # Get number of tokens on the board
     player_tokens = len(getPlayerCells(state))
 
-    # Get total power of the player color tokens on the board
-    total_power = getTotalPower(state)
-
+    # Get the highest power of player
+    highest_pow = getHighestPower(state)
 
     # Get the closest distance to opponent piece
     distance = getClosestDistance(state)
+    # Set as negative to get the closest distance
     distance = -distance
 
-    utility_val = EAT_WEIGHT * tokens_eaten + POWER_WEIGHT * total_power \
-            + DISTANCE_WEIGHT * distance + TOKEN_WEIGHT * player_tokens
+    utility_val = EAT_WEIGHT * pow_diff + DISTANCE_WEIGHT * distance \
+                  + TOKEN_WEIGHT * player_tokens + POWER_WEIGHT * highest_pow
+    # print(f"pow diff {EAT_WEIGHT} * {pow_diff} + "
+    #       f"dist {DISTANCE_WEIGHT} * {distance} + token num {TOKEN_WEIGHT} * {player_tokens} "
+    #       f"+ highest pow {POWER_WEIGHT} + {highest_pow} = {utility_val}")
     return utility_val
+
+def switchColour(game):
+    match game.turn_color:
+        case PlayerColor.RED:
+            game._turn_color = PlayerColor.BLUE
+        case PlayerColor.BLUE:
+            game._turn_color = PlayerColor.RED
+
 
 def getClosestDistance(game):
     player_cells = getPlayerCells(game)
@@ -207,10 +165,11 @@ def getClosestDistance(game):
     min_dist = float('inf')
     for player_pos in player_cells.keys():
         for opp_pos in opponent_cells.keys():
-            dist = math.sqrt(abs(player_pos.r - opp_pos.r)**2 + abs(player_pos.q - opp_pos.q)**2)
+            dist = math.sqrt(abs(player_pos.r - opp_pos.r) ** 2 + abs(player_pos.q - opp_pos.q) ** 2)
             if dist < min_dist:
                 min_dist = dist
     return min_dist
+
 
 def getPlayerCells(game):
     player_cells = {}
@@ -249,20 +208,33 @@ def checkCapture(pos, direction, pow, opponent_pieces):
         i += 1
     return 0
 
+
 def getOperators(game) -> List[Action]:
     """
     Find all valid moves
     """
     opponent_cells = getOpponentCells(game)
+    player_cells = getPlayerCells(game)
 
     # List possible SPAWN actions within 2 moves of opponent cells
     empty_cells = []
+    neighbour_opponent = []
+    neighbour_player = []
     for pos, power in opponent_cells.items():
         neighbour_opponent = getFarNeighbours(pos, power)
 
     for pos in neighbour_opponent:
         if not cellOccupied(pos, game):
             empty_cells.append(pos)
+
+    # List possible SPAWN actions within 2 moves of pplayer cells
+    for pos, power in player_cells.items():
+        neighbour_player = getNeighbours(pos)
+
+    for pos in neighbour_player:
+        if not cellOccupied(pos, game):
+            empty_cells.append(pos)
+
     spawn_actions = [SpawnAction(pos) for pos in empty_cells]
 
     # List possible SPREAD actions
@@ -321,7 +293,7 @@ def getFarNeighbours(cell, power):
     """
     Get cells out of opponent's reach
     """
-    power = power + 2
+    power = power + 1
     neighbours = []
     for dir in DIRECTIONS:
         newq = cell.q + power * dir.q
@@ -337,51 +309,29 @@ def getFarNeighbours(cell, power):
     return neighbours
 
 
-def setRedTokens(game):
+def setRedPower(game):
     """
     Set total number of red tokens on the board before action made
     """
-    global prev_red_token
-    prev_red_token = 0
+    global prev_red_power
+    prev_red_power = 0
     for cell, state in game._state.items():
-        if state.player == PlayerColor.BLUE:
-            prev_red_token += 1
+        if state.player == PlayerColor.RED:
+            prev_red_power += state.power
 
 
-def getRedTokens(game):
-    """
-    Get total number of red tokens on the board
-    """
-    total_red_token = 0
-    for cell, state in game._state.items():
-        if state.player == PlayerColor.BLUE:
-            total_red_token += 1
-    return total_red_token
-
-
-def setBlueTokens(game):
+def setBluePower(game):
     """
     Set total number of blue tokens on the board before action made
     """
-    global prev_blue_token
-    prev_blue_token = 0
+    global prev_blue_power
+    prev_blue_power = 0
     for cell, state in game._state.items():
         if state.player == PlayerColor.BLUE:
-            prev_blue_token += 1
+            prev_blue_power += state.power
 
 
-def getBlueTokens(game):
-    """
-    Get total number of blue tokens on the board
-    """
-    total_blue_token = 0
-    for cell, state in game._state.items():
-        if state.player == PlayerColor.BLUE:
-            total_blue_token += 1
-    return total_blue_token
-
-
-def getTotalPower(game):
+def getPlayerPower(game):
     """
     Get total power of the player colour turn tokens on the board
     """
@@ -390,6 +340,18 @@ def getTotalPower(game):
         if state.player == game.turn_color:
             total_power += state.power
     return total_power
+
+
+def getOpponentPower(game):
+    """
+    Get total power of the player colour turn tokens on the board
+    """
+    total_power = 0
+    for cell, state in game._state.items():
+        if state.player != game.turn_color and state.player is not None:
+            total_power += state.power
+    return total_power
+
 
 def getHighestPower(game):
     highest_power = float('-inf')
