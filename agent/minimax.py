@@ -142,6 +142,7 @@ def utility(state):
     Calculate the utility value of the given state for the given player and
     return a numeric value representing the utility
     """
+
     # Check if won
     if state.game_over:
         if len(getOpponentCells(state)) == 0:
