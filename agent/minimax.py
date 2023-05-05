@@ -47,36 +47,6 @@ def minimaxDecision(depth, game):
 
     return best_operator
 
-def tdleafUpdate(state):
-    v = utility(state)
-    for factor in weights.keys():
-        f_i = features[factor]
-        weights[factor] = weights[factor] + ALPHA * (result - val) * f_i
-    return weights
-
-def features(state):
-    """
-    Number for a list of features
-    """
-    player_power = getPlayerPower(state)
-    opponent_power = getOpponentPower(state)
-
-    player_cells = getPlayerCells(state)
-    opponent_cells = getOpponentCells(state)
-
-    player_tokens = len(player_cells)
-    opponent_tokens = len(opponent_cells)
-
-    min_dist = getDistance(player_cells, opponent_cells)
-
-    return {
-        "player_power": player_power,
-        "opponent_power": opponent_power,
-        "player_tokens": player_tokens,
-        "opponent_tokens": opponent_tokens,
-        "min_distance": min_dist
-    }
-
 
 def minimaxValue(state, game, depth, alpha, beta):
     """
@@ -84,7 +54,6 @@ def minimaxValue(state, game, depth, alpha, beta):
     """
     # Check Terminal nodes
     if state.game_over or depth == 0:
-        tdleafUpdate(state)
         return utility(state)
     else:
         if game.turn_color == state.turn_color:
