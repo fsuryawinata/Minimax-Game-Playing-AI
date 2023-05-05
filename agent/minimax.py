@@ -88,7 +88,6 @@ def features(state):
         "min_distance": min_dist
     }
 
-
 def minimaxValue(state, game, depth, alpha, beta):
     """
     Calculate minimax value
