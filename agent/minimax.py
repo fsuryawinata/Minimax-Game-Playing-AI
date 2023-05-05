@@ -113,8 +113,7 @@ def utility(state):
     # Set as negative to get the closest distance
     distance = -distance
 
-    utility_val = EAT_WEIGHT * pow_diff + DISTANCE_WEIGHT * distance \
-                  + TOKEN_WEIGHT * player_tokens + POWER_WEIGHT * highest_pow
+    utility_val = EAT_WEIGHT * pow_diff
     # print(f"pow diff {EAT_WEIGHT} * {pow_diff} + "
     #       f"dist {DISTANCE_WEIGHT} * {distance} + token num {TOKEN_WEIGHT} * {player_tokens} "
     #       f"+ highest pow {POWER_WEIGHT} + {highest_pow} = {utility_val}")
