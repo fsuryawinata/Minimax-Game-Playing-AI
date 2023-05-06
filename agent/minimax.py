@@ -11,7 +11,22 @@ BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
 
 # Weights for tdLeaf heuristic
-weights = {'power_diff': 0.24999975, 'eaten_diff': 0.41666625000000007, 'ally_diff': 0.20833312500000004, 'token_diff': 0.124999875}
+weights = {'power_diff': 0.4633656408197951,
+           'eaten_diff': 3.3001207795012265e-13,
+           'ally_diff': 1.6500603897506133e-13,
+           'token_diff': 0.24557476587429106,
+           'min_dist': -0.29105810820857175}
+def getDistance(game):
+    dist = 0
+    min_dist = 0
+    player_pieces, opp_pieces = getCells(game)
+    for pos in player_pieces.keys():
+        for opp_pos in opp_pieces.keys():
+            dist = abs(pos.r - opp_pos.r) + abs(pos.q - opp_pos.q)
+
+            if dist < min_dist:
+                dist = min_dist
+    return dist
 
 def normalize_weights(weights):
     """
@@ -44,7 +59,7 @@ def minimaxDecision(depth, game):
 
     # if game.turn_count > 2:
     #     weights = tdleafUpdate(game)
-
+    #
     # print(weights)
 
     return best_operator
@@ -131,10 +146,16 @@ def utility(state, game):
 
     ally_diff = player_ally - opponent_ally
 
+    if player_tokens > 1:
+        min_dist = getDistance(state)
+    else:
+        min_dist = 0
+
     val = weights["power_diff"] * power_diff + \
           weights["eaten_diff"] * eaten_diff + \
           weights["ally_diff"] * ally_diff + \
-          weights["token_diff"] * token_diff
+          weights["token_diff"] * token_diff + \
+          weights["min_dist"] * min_dist
 
     # Switch back
     if state.turn_color != game.turn_color:
@@ -271,7 +292,13 @@ def features(state):
 
     ally_diff = player_ally - opponent_ally
 
+    if player_tokens > 1:
+        min_dist = getDistance(state)
+    else:
+        min_dist = 0
+
     return {"power_diff": power_diff,
             "eaten_diff": eaten_diff,
             "ally_diff": ally_diff,
-            "token_diff": token_diff}
+            "token_diff": token_diff,
+            "min_dist": min_dist}

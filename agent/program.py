@@ -15,11 +15,6 @@ class Agent:
         self._color = color
         # Initialise game
         self.game = Board()
-        match color:
-            case PlayerColor.RED:
-                print("Testing: I am playing as red")
-            case PlayerColor.BLUE:
-                print("Testing: I am playing as blue")
 
     def action(self, **referee: dict) -> Action:
         """
@@ -28,7 +23,7 @@ class Agent:
         # Spawn in middle if first turn
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
-        depth = 2
+        depth = 4
         move = minimaxDecision(depth, self.game)
         return move
 
@@ -36,12 +31,5 @@ class Agent:
         """
         Update the agent with the last player's action.
         """
-        #print(referee["time_remaining"])
+        print(referee["time_remaining"])
         self.game.apply_action(action)
-        # match action:
-        #     case SpawnAction(cell):
-        #         print(f"Testing: {color} SPAWN at {cell}")
-        #         pass
-        #     case SpreadAction(cell, direction):
-        #         print(f"Testing: {color} SPREAD from {cell}, {direction}")
-        #         pass
