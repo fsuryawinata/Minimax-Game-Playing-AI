@@ -11,7 +11,7 @@ DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.Down
 ALPHA = 0.1
 
 # Weights for tdLeaf heuristic
-weights = {'player_power': 0.23255790741856178, 'opponent_power': -0.23255790661091394, 'player_highest_power': 0.023255790921944654, 'opponent_highest_power': -0.023255790591781036, 'player_tokens': 0.18604632589447237, 'opponent_tokens': -0.18604632528237283, 'min_dist': -0.11627895327995462}
+weights = {'power_diff': 0.059322496534763715, 'eaten_diff': 0.45826712894256777, 'ally_diff': 0.22913356447128388, 'token_diff': -0.16017352690800643, 'min_dist': 0.09310228314337837}
 
 
 def normalize_weights(weights):
@@ -22,6 +22,7 @@ def normalize_weights(weights):
     scaling_factor = 1.0 / total
     normalized_weights = {factor: weight * scaling_factor for factor, weight in weights.items()}
     return normalized_weights
+
 
 def minimaxDecision(depth, game):
     """
@@ -103,40 +104,46 @@ def utility(state, game):
     Calculate the utility value of the given state for the given player and
     return a numeric value representing the utility
     """
+    player_cells, opponent_cells = getCells(state)
     # Switch color to agent's color
     if state.turn_color != game.turn_color:
         switchColour(state)
 
     # Check if won
     if state.game_over:
-        if len(getOpponentCells(state)) == 0:
+        if len(opponent_cells) == 0:
             return float('1000')
-        elif len(getPlayerCells(state)) == 0:
+        elif len(player_cells) == 0:
             return float('-1000')
-
-    player_cells = getPlayerCells(state)
-    opponent_cells = getOpponentCells(state)
 
     player_tokens = len(player_cells)
     opponent_tokens = len(opponent_cells)
 
-    player_power = getPlayerPower(state)
-    opponent_power = getOpponentPower(state)
+    token_diff = player_tokens - opponent_tokens
 
-    player_highest_power = getPlayerHighestPower(state)
-    opp_highest_power = getOpponentHighestPower(state)
+    player_power, opponent_power = getPower(state)
+    power_diff = player_power - opponent_power
+
+    player_ate, player_ally = checkEaten(state)
+    switchColour(state)
+    opponent_ate, opponent_ally = checkEaten(state)
+    switchColour(state)
+
+    eaten_diff = player_ate - opponent_ate
+
+    ally_diff = player_ally - opponent_ally
+
+    highest_power = getHighestPower(game)
 
     if player_tokens > 1:
         min_dist = getDistance(player_cells)
     else:
         min_dist = 0
 
-    val = weights["player_power"] * player_power + \
-          weights["opponent_power"] * opponent_power + \
-          weights["player_highest_power"] * player_highest_power + \
-          weights["opponent_highest_power"] * opp_highest_power + \
-          weights["player_tokens"] * player_tokens + \
-          weights["opponent_tokens"] * opponent_tokens + \
+    val = weights["power_diff"] * power_diff + \
+          weights["eaten_diff"] * eaten_diff + \
+          weights["ally_diff"] * ally_diff + \
+          weights["token_diff"] * token_diff + \
           weights["min_dist"] * min_dist
 
     # Switch back
@@ -154,8 +161,7 @@ def switchColour(game):
 
 
 def getClosestDistance(game):
-    player_cells = getPlayerCells(game)
-    opponent_cells = getOpponentCells(game)
+    player_cells, opponent_cells = getCells(game)
     min_dist = float('inf')
     for player_pos in player_cells.keys():
         for opp_pos in opponent_cells.keys():
@@ -164,28 +170,43 @@ def getClosestDistance(game):
                 min_dist = dist
     return min_dist
 
-def getPlayerCells(game):
+
+def getCells(game):
     player_cells = {}
+    opponent_cells = {}
     for pos, state in game._state.items():
         if state.player == game.turn_color:
             player_cells[pos] = state.power
-    return player_cells
-
-
-def getOpponentCells(game):
-    opponent_cells = {}
-    for pos, state in game._state.items():
-        if state.player != game.turn_color and state.player is not None:
+        elif state.player != game.turn_color and state.player is not None:
             opponent_cells[pos] = state.power
-    return opponent_cells
+    return player_cells, opponent_cells
 
 
 def getOperators(game):
+    player_cells, opponent_cells = getCells(game)
     empty_cells = getEmptyCells(game)
     spawn_actions = [SpawnAction(pos) for pos in empty_cells]
-    spread_actions = [SpreadAction(pos, dir) for pos in getPlayerCells(game) for dir in DIRECTIONS]
+    spread_actions = [SpreadAction(pos, dir) for pos in player_cells for dir in DIRECTIONS]
 
     return spawn_actions + spread_actions
+
+
+def checkEaten(game):
+    player_cells, opponent_cells = getCells(game)
+    eaten_tokens = 0
+    ally_tokens = 0
+    for pos, power in player_cells:
+        for dir in DIRECTIONS:
+            i = 0
+            while i <= power:
+                neighbour = pos.__add__(dir)
+                if neighbour in opponent_cells:
+                    eaten_tokens += 1
+                elif neighbour in player_cells:
+                    ally_tokens += 1
+                i += 1
+
+    return eaten_tokens, ally_tokens
 
 
 def cellOccupied(cell, game):
@@ -197,11 +218,11 @@ def getDistance(player_pieces):
 
 
 def getEmptyCells(game):
-    opp_cells = getOpponentCells(game)
+    player_cells, opp_cells = getCells(game)
     empty_cells = []
     reachable_cells, unreachable_cells = getUnReachableCells(opp_cells, game)
 
-    for cell in getPlayerCells(game):
+    for cell in player_cells:
         for dir in DIRECTIONS:
             new_pos = HexPos((cell.r + dir.r) % BOARD_SIZE, (cell.q + dir.q) % BOARD_SIZE)
 
@@ -231,40 +252,24 @@ def getUnReachableCells(cells, game):
     return reachable_cells, unreachable_cells
 
 
-def getPlayerPower(game):
+def getPower(game):
     """
     Get total power of the player colour turn tokens on the board
     """
-    total_power = 0
+    player_power = 0
+    opp_power = 0
     for cell, state in game._state.items():
         if state.player == game.turn_color:
-            total_power += state.power
-    return total_power
+            player_power += state.power
+        elif state.player != game.turn_color and state.player is not None:
+            opp_power += state.power
+    return player_power, opp_power
 
 
-def getOpponentPower(game):
-    """
-    Get total power of the player colour turn tokens on the board
-    """
-    total_power = 0
-    for cell, state in game._state.items():
-        if state.player != game.turn_color and state.player is not None:
-            total_power += state.power
-    return total_power
-
-
-def getPlayerHighestPower(game):
+def getHighestPower(game):
     highest_power = float('-inf')
     for cell, state in game._state.items():
         if state.player == game.turn_color:
-            if state.power > highest_power:
-                highest_power = state.power
-    return highest_power
-
-def getOpponentHighestPower(game):
-    highest_power = float('-inf')
-    for cell, state in game._state.items():
-        if state.player != game.turn_color and state.player is not None:
             if state.power > highest_power:
                 highest_power = state.power
     return highest_power
@@ -287,29 +292,33 @@ def features(state):
     """
     Number for a list of features
     """
-    player_power = getPlayerPower(state)
-    opponent_power = getOpponentPower(state)
-
-    player_cells = getPlayerCells(state)
-    opponent_cells = getOpponentCells(state)
+    player_cells, opponent_cells = getCells(state)
 
     player_tokens = len(player_cells)
     opponent_tokens = len(opponent_cells)
 
-    player_highest_power = getPlayerHighestPower(state)
-    opp_highest_power = getOpponentHighestPower(state)
+    token_diff = player_tokens - opponent_tokens
+
+    player_power, opponent_power = getPower(state)
+    power_diff = player_power - opponent_power
+
+    player_ate, player_ally = checkEaten(state)
+    switchColour(state)
+    opponent_ate, opponent_ally = checkEaten(state)
+    switchColour(state)
+
+    eaten_diff = player_ate - opponent_ate
+
+    ally_diff = player_ally - opponent_ally
 
     if player_tokens > 1:
         min_dist = getDistance(player_cells)
     else:
         min_dist = 0
 
-    return {
-        "player_power": player_power,
-        "opponent_power": opponent_power,
-        "player_highest_power": player_highest_power,
-        "opponent_highest_power": opp_highest_power,
-        "player_tokens": player_tokens,
-        "opponent_tokens": opponent_tokens,
-        "min_dist": min_dist,
-    }
+    return {"power_diff": power_diff,
+            "eaten_diff": eaten_diff,
+            "ally_diff": ally_diff,
+            "token_diff": token_diff,
+            "min_dist": min_dist}
+

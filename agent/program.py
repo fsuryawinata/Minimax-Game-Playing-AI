@@ -28,7 +28,7 @@ class Agent:
         # Spawn in middle if first turn
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
-        depth = 5
+        depth = 4
         move = minimaxDecision(depth, self.game)
         return move
 
