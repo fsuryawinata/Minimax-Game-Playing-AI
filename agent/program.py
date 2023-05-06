@@ -28,15 +28,9 @@ class Agent:
         # Spawn in middle if first turn
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
-        depth = 2
+        depth = 5
         move = minimaxDecision(depth, self.game)
         return move
-        # match self._color:
-        #     case PlayerColor.RED:
-        #         return SpawnAction(HexPos(3, 3))
-        #     case PlayerColor.BLUE:
-        #         # This is going to be invalid... BLUE never spawned!
-        #         return SpreadAction(HexPos(3, 3), HexDir.Up)
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """

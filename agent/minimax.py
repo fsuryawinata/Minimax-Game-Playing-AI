@@ -1,9 +1,9 @@
 import copy
+import itertools
 import math
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
-from typing import List
 
 BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
@@ -11,15 +11,17 @@ DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.Down
 ALPHA = 0.1
 
 # Weights for tdLeaf heuristic
-weights = {
-    "player_power": 1,
-    "opponent_power": -1,
-    "highest_power": 0.7,
-    "player_tokens": 0.5,
-    "opponent_tokens": -0.5,
-    "min_dist": -0.3,
-}
+weights = {'player_power': 0.23255790741856178, 'opponent_power': -0.23255790661091394, 'player_highest_power': 0.023255790921944654, 'opponent_highest_power': -0.023255790591781036, 'player_tokens': 0.18604632589447237, 'opponent_tokens': -0.18604632528237283, 'min_dist': -0.11627895327995462}
 
+
+def normalize_weights(weights):
+    """
+    Normalize a dictionary of weights so that they sum to 1, while preserving the signs of the original weights.
+    """
+    total = sum([abs(weight) for weight in weights.values()]) + 1e-6
+    scaling_factor = 1.0 / total
+    normalized_weights = {factor: weight * scaling_factor for factor, weight in weights.items()}
+    return normalized_weights
 
 def minimaxDecision(depth, game):
     """
@@ -40,12 +42,13 @@ def minimaxDecision(depth, game):
             best_value = value
             best_operator = op
 
-    # if game.turn_count > 2:
-    #     weights = tdleafUpdate(game)
-    #
-    # print(weights)
+    if game.turn_count > 2:
+        weights = tdleafUpdate(game)
+
+    print(weights)
 
     return best_operator
+
 
 def minimaxValue(state, game, depth, alpha, beta):
     """
@@ -64,7 +67,7 @@ def minimaxValue(state, game, depth, alpha, beta):
                 alpha = max(alpha, minimaxValue(new_state, game, depth - 1, alpha, beta)[0])
                 new_state.undo_action()
 
-                if alpha >= beta:
+                if alpha <= beta:
                     break
             return alpha, weights
         else:
@@ -75,10 +78,11 @@ def minimaxValue(state, game, depth, alpha, beta):
                 beta = min(beta, minimaxValue(new_state, game, depth - 1, alpha, beta)[0])
                 new_state.undo_action()
 
-                if beta <= alpha:
+                if beta >= alpha:
                     break
             # print(f"MINIMUM {beta}")
             return beta, weights
+
 
 def game_over(state):
     red_pow = 0
@@ -119,7 +123,8 @@ def utility(state, game):
     player_power = getPlayerPower(state)
     opponent_power = getOpponentPower(state)
 
-    highest_power = getHighestPower(state)
+    player_highest_power = getPlayerHighestPower(state)
+    opp_highest_power = getOpponentHighestPower(state)
 
     if player_tokens > 1:
         min_dist = getDistance(player_cells)
@@ -128,14 +133,11 @@ def utility(state, game):
 
     val = weights["player_power"] * player_power + \
           weights["opponent_power"] * opponent_power + \
-          weights["highest_power"] * highest_power + \
+          weights["player_highest_power"] * player_highest_power + \
+          weights["opponent_highest_power"] * opp_highest_power + \
           weights["player_tokens"] * player_tokens + \
           weights["opponent_tokens"] * opponent_tokens + \
           weights["min_dist"] * min_dist
-
-    # print(f"{state.turn_color} POW {player_power} + OPP POW {opponent_power} +"
-    #   f" HIGHEST POW {highest_power} + PLAY TOK {player_tokens} + OPP TOK {opponent_tokens} + MIN DIST {min_dist} "
-    #   f"= {val}")
 
     # Switch back
     if state.turn_color != game.turn_color:
@@ -162,7 +164,6 @@ def getClosestDistance(game):
                 min_dist = dist
     return min_dist
 
-
 def getPlayerCells(game):
     player_cells = {}
     for pos, state in game._state.items():
@@ -179,100 +180,53 @@ def getOpponentCells(game):
     return opponent_cells
 
 
-def getOperators(game) -> List[Action]:
-    """
-    Find all valid moves
-    """
+def getOperators(game):
     empty_cells = getEmptyCells(game)
     spawn_actions = [SpawnAction(pos) for pos in empty_cells]
-
-    # List possible SPREAD actions
-    player_cells = getPlayerCells(game)
-    spread_actions = []
-
-    for pos in player_cells:
-        for direction in DIRECTIONS:
-            spread_actions.append(SpreadAction(pos, direction))
+    spread_actions = [SpreadAction(pos, dir) for pos in getPlayerCells(game) for dir in DIRECTIONS]
 
     return spawn_actions + spread_actions
 
 
 def cellOccupied(cell, game):
-    """
-    Check whether the cell is occupied
-    """
-    if game._state[cell].player == None:
-        return False
-    return True
+    return game._state[cell].player is not None
 
 
 def getDistance(player_pieces):
-    """
-    Get minimum Manhattan distance to any other player piece
-    """
-    min_distance = float('inf')
-    for i, piece1 in enumerate(player_pieces):
-        for j, piece2 in enumerate(player_pieces):
-            if i < j:
-                distance = abs(piece1.r - piece2.r) + abs(piece1.q - piece2.q)
-                if distance < min_distance:
-                    min_distance = distance
-    return min_distance
+    return min(abs(p1.r - p2.r) + abs(p1.q - p2.q) for p1, p2 in itertools.combinations(player_pieces, 2))
 
 
 def getEmptyCells(game):
-    """
-    Get neighbor player cells and cells out of opponent's reach
-    """
-    reachable_cells, unreachable_cells = getUnReachableCells(getOpponentCells(game), game)
-
-    player_cells = getPlayerCells(game)
+    opp_cells = getOpponentCells(game)
     empty_cells = []
-    for cell in player_cells.keys():
+    reachable_cells, unreachable_cells = getUnReachableCells(opp_cells, game)
+
+    for cell in getPlayerCells(game):
         for dir in DIRECTIONS:
-            newq = cell.q + dir.q
-            newr = cell.r + dir.r
+            new_pos = HexPos((cell.r + dir.r) % BOARD_SIZE, (cell.q + dir.q) % BOARD_SIZE)
 
-            if 0 > newq or newq > 6:
-                newq = newq % BOARD_SIZE
-            if 0 > newr or newr > 6:
-                newr = newr % BOARD_SIZE
+            if not cellOccupied(new_pos, game) and new_pos not in reachable_cells:
+                empty_cells.append(new_pos)
 
-            new_pos = HexPos(newr, newq)
-            if not cellOccupied(new_pos, game):
-                if new_pos not in unreachable_cells:
-                    empty_cells.append(new_pos)
-
-    empty_cells.extend(reachable_cells)
+    empty_cells.extend(unreachable_cells)
     return empty_cells
 
 
 def getUnReachableCells(cells, game):
-    """
-    Get cells that opponent can and cannot reach
-    """
-    unreachable_cells = []
-    reachable_cells = []
+    reachable_cells, unreachable_cells = [], []
     for cell, power in cells.items():
-        i = 1
-        while i <= power + 1:
+        for i in range(1, power + 2):
             for dir in DIRECTIONS:
-                newq = cell.q + i * dir.q
-                newr = cell.r + i * dir.r
+                new_pos = HexPos((cell.r + i * dir.r) % BOARD_SIZE, (cell.q + i * dir.q) % BOARD_SIZE)
 
-                if 0 > newq or newq > 6:
-                    newq = newq % BOARD_SIZE
-                if 0 > newr or newr > 6:
-                    newr = newr % BOARD_SIZE
-
-                new_pos = HexPos(newr, newq)
                 if not cellOccupied(new_pos, game):
-                    if i == power + 1:
+                    if i == power + 1 and new_pos not in reachable_cells:
                         unreachable_cells.append(new_pos)
                     else:
                         reachable_cells.append(new_pos)
-
-            i += 1
+                        # Remove newly discovered reachable cells
+                        if new_pos in unreachable_cells:
+                            unreachable_cells.remove(new_pos)
 
     return reachable_cells, unreachable_cells
 
@@ -299,13 +253,22 @@ def getOpponentPower(game):
     return total_power
 
 
-def getHighestPower(game):
+def getPlayerHighestPower(game):
     highest_power = float('-inf')
     for cell, state in game._state.items():
         if state.player == game.turn_color:
             if state.power > highest_power:
                 highest_power = state.power
     return highest_power
+
+def getOpponentHighestPower(game):
+    highest_power = float('-inf')
+    for cell, state in game._state.items():
+        if state.player != game.turn_color and state.player is not None:
+            if state.power > highest_power:
+                highest_power = state.power
+    return highest_power
+
 
 def tdleafUpdate(state):
     global weights
@@ -316,7 +279,7 @@ def tdleafUpdate(state):
     new_weights = {}
     for factor in weights.keys():
         new_weights[factor] = weights[factor] + ALPHA * (result - val) * f_i[factor]
-    weights = new_weights
+    weights = normalize_weights(new_weights)
     return weights
 
 
@@ -333,7 +296,8 @@ def features(state):
     player_tokens = len(player_cells)
     opponent_tokens = len(opponent_cells)
 
-    highest_power = getHighestPower(state)
+    player_highest_power = getPlayerHighestPower(state)
+    opp_highest_power = getOpponentHighestPower(state)
 
     if player_tokens > 1:
         min_dist = getDistance(player_cells)
@@ -343,7 +307,8 @@ def features(state):
     return {
         "player_power": player_power,
         "opponent_power": opponent_power,
-        "highest_power": highest_power,
+        "player_highest_power": player_highest_power,
+        "opponent_highest_power": opp_highest_power,
         "player_tokens": player_tokens,
         "opponent_tokens": opponent_tokens,
         "min_dist": min_dist,
