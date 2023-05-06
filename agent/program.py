@@ -28,7 +28,7 @@ class Agent:
         # Spawn in middle if first turn
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
-        depth = 4
+        depth = 2
         move = minimaxDecision(depth, self.game)
         return move
 
@@ -36,11 +36,12 @@ class Agent:
         """
         Update the agent with the last player's action.
         """
+        #print(referee["time_remaining"])
         self.game.apply_action(action)
-        match action:
-            case SpawnAction(cell):
-                print(f"Testing: {color} SPAWN at {cell}")
-                pass
-            case SpreadAction(cell, direction):
-                print(f"Testing: {color} SPREAD from {cell}, {direction}")
-                pass
+        # match action:
+        #     case SpawnAction(cell):
+        #         print(f"Testing: {color} SPAWN at {cell}")
+        #         pass
+        #     case SpreadAction(cell, direction):
+        #         print(f"Testing: {color} SPREAD from {cell}, {direction}")
+        #         pass
