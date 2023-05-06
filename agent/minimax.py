@@ -42,10 +42,10 @@ def minimaxDecision(depth, game):
             best_value = value
             best_operator = op
 
-    if game.turn_count > 2:
-        weights = tdleafUpdate(game)
+    # if game.turn_count > 2:
+    #     weights = tdleafUpdate(game)
 
-    print(weights)
+    # print(weights)
 
     return best_operator
 
