@@ -31,5 +31,4 @@ class Agent:
         """
         Update the agent with the last player's action.
         """
-        print(referee["time_remaining"])
         self.game.apply_action(action)

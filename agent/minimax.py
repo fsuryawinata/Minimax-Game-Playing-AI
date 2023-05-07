@@ -11,11 +11,11 @@ BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
 
 # Weights for tdLeaf heuristic
-weights = {'power_diff': 0.4633656408197951,
-           'eaten_diff': 3.3001207795012265e-13,
-           'ally_diff': 1.6500603897506133e-13,
-           'token_diff': 0.24557476587429106,
-           'min_dist': -0.29105810820857175}
+weights = {'power_diff': 0.5298628211093089,
+           'eaten_diff': 1.8436272690352981e-13,
+           'ally_diff': 9.218136345176491e-14,
+           'token_diff': 0.40045007157768786,
+           'min_dist': 0.06968610731292038}
 def getDistance(game):
     dist = 0
     min_dist = 0
