@@ -175,7 +175,7 @@ def getCells(game):
 
 def getOperators(game):
     player_cells, opponent_cells = getCells(game)
-    if game._total_power < 44:
+    if game._total_power <= 48:
         empty_cells = getEmptyCells(game)
         spawn_actions = [SpawnAction(pos) for pos in empty_cells]
     spread_actions = [SpreadAction(pos, direction) for pos in player_cells for direction in DIRECTIONS]

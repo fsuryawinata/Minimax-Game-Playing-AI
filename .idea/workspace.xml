@@ -7,7 +7,6 @@
     <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Changed utility">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/agent/minimax.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/minimax.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/agent/program.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/program.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -253,7 +252,28 @@
       <option name="project" value="LOCAL" />
       <updated>1683361164395</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="Changed utility">
+      <created>1683376132174</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1683376132174</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Changed utility">
+      <created>1683435941032</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1683435941032</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Changed utility">
+      <created>1683510899689</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1683510899689</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
