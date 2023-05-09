@@ -24,7 +24,7 @@ class Agent:
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
 
-        if referee["time_remaining"] < 60:
+        if referee["time_remaining"] < 100:
             depth = 2
         else:
             depth = 4

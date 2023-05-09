@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Felicia">
-      <change beforePath="$PROJECT_DIR$/agent/minimax.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/minimax.py" afterDir="false" />
+    <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Chenuli 2">
+      <change beforePath="$PROJECT_DIR$/agent/program.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/program.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -335,7 +335,14 @@
       <option name="project" value="LOCAL" />
       <updated>1683652726948</updated>
     </task>
-    <option name="localTasksCounter" value="40" />
+    <task id="LOCAL-00040" summary="Chenuli 2">
+      <created>1683653415992</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1683653415992</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -363,6 +370,7 @@
     <MESSAGE value="Depth = 2" />
     <MESSAGE value="Chenuli" />
     <MESSAGE value="Felicia" />
-    <option name="LAST_COMMIT_MESSAGE" value="Felicia" />
+    <MESSAGE value="Chenuli 2" />
+    <option name="LAST_COMMIT_MESSAGE" value="Chenuli 2" />
   </component>
 </project>
