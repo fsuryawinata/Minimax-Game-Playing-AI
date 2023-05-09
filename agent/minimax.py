@@ -12,8 +12,8 @@ DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.Down
 
 # Weights for tdLeaf heuristic
 weights = {'power_diff': 0.5298628211093089,
-           'eaten_diff': 1.8436272690352981e-13,
-           'ally_diff': 9.218136345176491e-14,
+           # 'eaten_diff': 1.8436272690352981e-13,
+           # 'ally_diff': 9.218136345176491e-14,
            'token_diff': 0.40045007157768786,
            'min_dist': 0.06968610731292038}
 def getDistance(game):
@@ -142,9 +142,9 @@ def utility(state, game):
     opponent_ate, opponent_ally = checkEaten(state)
     switchColour(state)
 
-    eaten_diff = player_ate - opponent_ate
-
-    ally_diff = player_ally - opponent_ally
+    # eaten_diff = player_ate - opponent_ate
+    #
+    # ally_diff = player_ally - opponent_ally
 
     if player_tokens > 1:
         min_dist = getDistance(state)
@@ -152,10 +152,10 @@ def utility(state, game):
         min_dist = 0
 
     val = weights["power_diff"] * power_diff + \
-          weights["eaten_diff"] * eaten_diff + \
-          weights["ally_diff"] * ally_diff + \
           weights["token_diff"] * token_diff + \
           weights["min_dist"] * min_dist
+    # weights["eaten_diff"] * eaten_diff + \
+    # weights["ally_diff"] * ally_diff + \
 
     # Switch back
     if state.turn_color != game.turn_color:
@@ -289,9 +289,9 @@ def features(state):
     opponent_ate, opponent_ally = checkEaten(state)
     switchColour(state)
 
-    eaten_diff = player_ate - opponent_ate
-
-    ally_diff = player_ally - opponent_ally
+    # eaten_diff = player_ate - opponent_ate
+    #
+    # ally_diff = player_ally - opponent_ally
 
     if player_tokens > 1:
         min_dist = getDistance(state)
@@ -299,7 +299,7 @@ def features(state):
         min_dist = 0
 
     return {"power_diff": power_diff,
-            "eaten_diff": eaten_diff,
-            "ally_diff": ally_diff,
+            # "eaten_diff": eaten_diff,
+            # "ally_diff": ally_diff,
             "token_diff": token_diff,
             "min_dist": min_dist}
