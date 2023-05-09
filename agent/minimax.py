@@ -5,24 +5,23 @@ import math
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
 
+
 ALPHA = 0.1
 BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
 
 # Weights for tdLeaf heuristic
-weights = {'power_diff': 0.5,
+weights = {'power_diff': 0.5298628211093089,
            # 'eaten_diff': 1.8436272690352981e-13,
            # 'ally_diff': 9.218136345176491e-14,
-           'token_diff': 0.4,
-           'min_dist': 0.1}
-
-
+           'token_diff': 0.40045007157768786,
+           'min_dist': 0.06968610731292038}
 def getDistance(game):
     """
     Get min distance from any player token to any opponent token
     """
     dist = 0
-    min_dist = float('inf')
+    min_dist = 0
     player_pieces, opp_pieces = getCells(game)
     for pos in player_pieces.keys():
         for opp_pos in opp_pieces.keys():
@@ -31,7 +30,6 @@ def getDistance(game):
             if dist < min_dist:
                 min_dist = dist
     return min_dist
-
 
 def normalize_weights(weights):
     """
@@ -67,8 +65,8 @@ def minimaxDecision(depth, game):
             best_operator = op
 
     # if game.turn_count > 2:
-    #  weights = tdleafUpdate(game)
-
+    #     weights = tdleafUpdate(game)
+    #
     # print(weights)
 
     return best_operator
@@ -113,7 +111,6 @@ def minimaxValue(state, game, depth, alpha, beta):
                     break
             return beta, weights
 
-
 def utility(state, game):
     """
     Calculate the utility value of the given state for the given player and
@@ -143,14 +140,14 @@ def utility(state, game):
     player_power, opponent_power = getPower(state)
     power_diff = player_power - opponent_power
 
-    """player_ate, player_ally = checkEaten(state)
-    switchColour(state)
-    opponent_ate, opponent_ally = checkEaten(state)
-    switchColour(state)
+    # player_ate, player_ally = checkEaten(state)
+    # switchColour(state)
+    # opponent_ate, opponent_ally = checkEaten(state)
+    # switchColour(state)
 
-    eaten_diff = player_ate - opponent_ate
-
-    ally_diff = player_ally - opponent_ally"""
+    # eaten_diff = player_ate - opponent_ate
+    #
+    # ally_diff = player_ally - opponent_ally
 
     if player_tokens > 1:
         min_dist = getDistance(state)
@@ -161,10 +158,9 @@ def utility(state, game):
           weights["token_diff"] * token_diff + \
           weights["min_dist"] * min_dist
     # weights["eaten_diff"] * eaten_diff + \
-    # weights["ally_diff"] * ally_diff
+    # weights["ally_diff"] * ally_diff + \
 
     return val
-
 
 def getCells(game):
     """
@@ -185,7 +181,7 @@ def getOperators(game):
     Get valid moves on the board
     """
     player_cells, opponent_cells = getCells(game)
-    spawn_actions = []
+
     # Spawn if total power is less than or equal to 48
     if game._total_power <= 48:
         empty_cells = getEmptyCells(game)
@@ -205,7 +201,7 @@ def checkEaten(game):
     ally_tokens = 0
 
     # If player spreads, check how many opponent tokens can be eaten
-    for pos, power in player_cells.items():
+    for pos, power in player_cells:
         for direction in DIRECTIONS:
             i = 0
             while i <= power:
@@ -228,7 +224,7 @@ def getEmptyCells(game):
     reachable_cells, unreachable_cells = getUnReachableCells(opp_cells, game)
 
     # Token can spawn in surrounding player cells if not occupied
-    for cell in player_cells:
+    for cell in player_cells.keys():
         for direction in DIRECTIONS:
             new_pos = cell.__add__(direction)
 
@@ -238,6 +234,7 @@ def getEmptyCells(game):
     # Add cells that are around the opponent tokens out of their reach
     empty_cells.extend(unreachable_cells)
     return empty_cells
+
 
 
 def switchColour(game):
@@ -287,7 +284,6 @@ def getPower(game):
             opp_power += state.power
     return player_power, opp_power
 
-
 def tdleafUpdate(state):
     """
     Update weights using tdleaf
@@ -324,22 +320,22 @@ def features(state):
     player_power, opponent_power = getPower(state)
     power_diff = player_power - opponent_power
 
-    """player_ate, player_ally = checkEaten(state)
-        switchColour(state)
-        opponent_ate, opponent_ally = checkEaten(state)
-        switchColour(state)
+    # player_ate, player_ally = checkEaten(state)
+    # switchColour(state)
+    # opponent_ate, opponent_ally = checkEaten(state)
+    # switchColour(state)
 
-        eaten_diff = player_ate - opponent_ate
-        #
-        ally_diff = player_ally - opponent_ally"""
+    # eaten_diff = player_ate - opponent_ate
+    #
+    # ally_diff = player_ally - opponent_ally
 
     if player_tokens > 1:
         min_dist = getDistance(state)
     else:
         min_dist = 0
 
-    val = weights["power_diff"] * power_diff + \
-          weights["token_diff"] * token_diff + \
-          weights["min_dist"] * min_dist
-    # weights["eaten_diff"] * eaten_diff + \
-    # weights["ally_diff"] * ally_diff
+    return {"power_diff": power_diff,
+            # "eaten_diff": eaten_diff,
+            # "ally_diff": ally_diff,
+            "token_diff": token_diff,
+            "min_dist": min_dist}

@@ -28,7 +28,8 @@ class Agent:
             depth = 2
         else:
             depth = 4
-        # _, move = minimaxValue(self.game, self.game, depth, float('-inf'), float('inf'), True)
+
+        print(referee["time_remaining"])
         move = minimaxDecision(depth, self.game)
         return move
 
