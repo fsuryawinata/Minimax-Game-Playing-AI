@@ -5,17 +5,17 @@ import math
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir
 
-
 ALPHA = 0.1
 BOARD_SIZE = 7
 DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.DownLeft, HexDir.DownRight]
 
 # Weights for tdLeaf heuristic
-weights = {'power_diff': 0.5298628211093089,
-           # 'eaten_diff': 1.8436272690352981e-13,
-           # 'ally_diff': 9.218136345176491e-14,
-           'token_diff': 0.40045007157768786,
-           'min_dist': 0.06968610731292038}
+weights = {'power_diff': 0.31359222799025477,
+           'eaten_diff': 0.3310728758343018,
+           'ally_diff': 0.1655364379171509,
+           'token_diff': 0.18979745825829064}
+           #'min_dist': -1.9488907338181292e-15}
+
 def getDistance(game):
     """
     Get min distance from any player token to any opponent token
@@ -140,25 +140,25 @@ def utility(state, game):
     player_power, opponent_power = getPower(state)
     power_diff = player_power - opponent_power
 
-    # player_ate, player_ally = checkEaten(state)
-    # switchColour(state)
-    # opponent_ate, opponent_ally = checkEaten(state)
-    # switchColour(state)
+    player_ate, player_ally = checkEaten(state)
+    switchColour(state)
+    opponent_ate, opponent_ally = checkEaten(state)
+    switchColour(state)
 
-    # eaten_diff = player_ate - opponent_ate
+    eaten_diff = player_ate - opponent_ate
+
+    ally_diff = player_ally - opponent_ally
     #
-    # ally_diff = player_ally - opponent_ally
-
-    if player_tokens > 1:
-        min_dist = getDistance(state)
-    else:
-        min_dist = 0
+    # if player_tokens > 1:
+    #     min_dist = getDistance(state)
+    # else:
+    #     min_dist = 0
 
     val = weights["power_diff"] * power_diff + \
           weights["token_diff"] * token_diff + \
-          weights["min_dist"] * min_dist
-    # weights["eaten_diff"] * eaten_diff + \
-    # weights["ally_diff"] * ally_diff + \
+          weights["eaten_diff"] * eaten_diff + \
+          weights["ally_diff"] * ally_diff
+          #weights["min_dist"] * min_dist
 
     return val
 
@@ -320,22 +320,22 @@ def features(state):
     player_power, opponent_power = getPower(state)
     power_diff = player_power - opponent_power
 
-    # player_ate, player_ally = checkEaten(state)
-    # switchColour(state)
-    # opponent_ate, opponent_ally = checkEaten(state)
-    # switchColour(state)
+    player_ate, player_ally = checkEaten(state)
+    switchColour(state)
+    opponent_ate, opponent_ally = checkEaten(state)
+    switchColour(state)
 
-    # eaten_diff = player_ate - opponent_ate
-    #
-    # ally_diff = player_ally - opponent_ally
+    eaten_diff = player_ate - opponent_ate
 
-    if player_tokens > 1:
-        min_dist = getDistance(state)
-    else:
-        min_dist = 0
+    ally_diff = player_ally - opponent_ally
+
+    # if player_tokens > 1:
+    #     min_dist = getDistance(state)
+    # else:
+    #     min_dist = 0
 
     return {"power_diff": power_diff,
-            # "eaten_diff": eaten_diff,
-            # "ally_diff": ally_diff,
-            "token_diff": token_diff,
-            "min_dist": min_dist}
+            "eaten_diff": eaten_diff,
+            "ally_diff": ally_diff,
+            "token_diff": token_diff}
+            #"min_dist": min_dist}
