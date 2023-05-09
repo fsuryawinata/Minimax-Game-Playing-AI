@@ -14,14 +14,14 @@ DIRECTIONS = [HexDir.Up, HexDir.UpRight, HexDir.UpLeft, HexDir.Down, HexDir.Down
 weights = {'power_diff': 0.5298628211093089,
            # 'eaten_diff': 1.8436272690352981e-13,
            # 'ally_diff': 9.218136345176491e-14,
-           'token_diff': 0.40045007157768786,
-           'min_dist': 0.06968610731292038}
+           'token_diff': 0.4004500715776878}
+           #'min_dist': 0.06968610731292038}
 def getDistance(game):
     """
     Get min distance from any player token to any opponent token
     """
     dist = 0
-    min_dist = 0
+    min_dist = float('inf')
     player_pieces, opp_pieces = getCells(game)
     for pos in player_pieces.keys():
         for opp_pos in opp_pieces.keys():
@@ -149,14 +149,14 @@ def utility(state, game):
     #
     # ally_diff = player_ally - opponent_ally
 
-    if player_tokens > 1:
+    '''if player_tokens > 1:
         min_dist = getDistance(state)
     else:
-        min_dist = 0
+        min_dist = 0'''
 
     val = weights["power_diff"] * power_diff + \
-          weights["token_diff"] * token_diff + \
-          weights["min_dist"] * min_dist
+          weights["token_diff"] * token_diff
+          #weights["min_dist"] * min_dist
     # weights["eaten_diff"] * eaten_diff + \
     # weights["ally_diff"] * ally_diff + \
 
@@ -181,7 +181,7 @@ def getOperators(game):
     Get valid moves on the board
     """
     player_cells, opponent_cells = getCells(game)
-
+    spawn_actions = []
     # Spawn if total power is less than or equal to 48
     if game._total_power <= 48:
         empty_cells = getEmptyCells(game)
@@ -201,7 +201,7 @@ def checkEaten(game):
     ally_tokens = 0
 
     # If player spreads, check how many opponent tokens can be eaten
-    for pos, power in player_cells:
+    for pos, power in player_cells.items():
         for direction in DIRECTIONS:
             i = 0
             while i <= power:
@@ -337,5 +337,5 @@ def features(state):
     return {"power_diff": power_diff,
             # "eaten_diff": eaten_diff,
             # "ally_diff": ally_diff,
-            "token_diff": token_diff,
-            "min_dist": min_dist}
+            "token_diff": token_diff}
+            #"min_dist": min_dist}

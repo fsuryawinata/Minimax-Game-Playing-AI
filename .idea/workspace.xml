@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Chenuli">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    <list default="true" id="7703c61d-50e7-4280-afdc-1c9741fb4d5c" name="Changes" comment="Felicia">
       <change beforePath="$PROJECT_DIR$/agent/minimax.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/minimax.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/agent/program.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent/program.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -330,7 +328,14 @@
       <option name="project" value="LOCAL" />
       <updated>1683652270585</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Felicia">
+      <created>1683652726948</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1683652726948</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -357,6 +362,7 @@
     <MESSAGE value="NO ally and eaten diff with comments" />
     <MESSAGE value="Depth = 2" />
     <MESSAGE value="Chenuli" />
-    <option name="LAST_COMMIT_MESSAGE" value="Chenuli" />
+    <MESSAGE value="Felicia" />
+    <option name="LAST_COMMIT_MESSAGE" value="Felicia" />
   </component>
 </project>
