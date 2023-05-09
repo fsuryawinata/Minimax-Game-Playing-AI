@@ -24,10 +24,7 @@ class Agent:
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
 
-        if referee["time_remaining"] < 30:
-            depth = 2
-        else:
-            depth = 4
+        depth = 2
         move = minimaxDecision(depth, self.game)
         return move
 
