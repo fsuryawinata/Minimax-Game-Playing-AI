@@ -24,7 +24,11 @@ class Agent:
         if self.game.turn_count == 0:
             return SpawnAction(HexPos(3, 3))
 
-        depth = 2
+        if referee["time_remaining"] < 60:
+            depth = 2
+        else:
+            depth = 4
+        # _, move = minimaxValue(self.game, self.game, depth, float('-inf'), float('inf'), True)
         move = minimaxDecision(depth, self.game)
         return move
 
@@ -33,3 +37,7 @@ class Agent:
         Update the agent with the last player's action.
         """
         self.game.apply_action(action)
+
+
+
+
