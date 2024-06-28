@@ -3,7 +3,6 @@
 
 from referee.game import \
     PlayerColor, Action, SpawnAction, SpreadAction, HexPos, HexDir, Board
-#from .board import Board
 from .minimax import minimaxDecision
 
 
@@ -31,12 +30,6 @@ class Agent:
         depth = 2
         move = minimaxDecision(depth, self.game)
         return move
-        # match self._color:
-        #     case PlayerColor.RED:
-        #         return SpawnAction(HexPos(3, 3))
-        #     case PlayerColor.BLUE:
-        #         # This is going to be invalid... BLUE never spawned!
-        #         return SpreadAction(HexPos(3, 3), HexDir.Up)
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """

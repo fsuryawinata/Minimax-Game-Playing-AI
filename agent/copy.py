@@ -187,7 +187,7 @@ def getOperators(game) -> List[Action]:
         if not cellOccupied(pos, game):
             empty_cells.append(pos)
 
-    # List possible SPAWN actions within 2 moves of player cells
+    # List possible SPAWN actions within 2 moves of pplayer cells
     for pos, power in player_cells.items():
         neighbour_player = getNeighbours(pos)
 
